@@ -1,27 +1,31 @@
 module CardTypes
-  ( Action(..)
-  , Axis(..)
-  , Card(..)
-  , Color(..)
-  , DCard(..)
-  , DisplayMode(..)
-  , Ext(..)
-  , FaceDir(..)
-  , Field(..)
-  , GSt(..)
-  , Pile(..)
-  , PileType(..)
-  , Rank(..) 
-  , Suit(..)
-  )
+  -- ( Action(..)
+  -- , Axis(..)
+  -- , Card(..)
+  -- , Color(..)
+  -- , DCard(..)
+  -- , DisplayMode(..)
+  -- , Ext(..)
+  -- , FaceDir(..)
+  -- , Field(..)
+  -- , GSt(..)
+  -- , Pile(..)
+  -- , PileType(..)
+  -- , ProductType(..) -- temporary
+  -- , showProductType -- temporary
+  -- , Rank(..) 
+  -- , Suit(..)
+  -- )
   where
 
 import Prelude
 
 -- import Data.Generic.Rep (class Generic)
 import Data.Bounded.Generic (genericBottom, genericTop)
+import Data.Char (toCharCode, fromCharCode)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
+import Data.Show (show)
 import Data.Enum (class Enum, toEnum)
 import Data.List (List)
 import Data.Maybe (Maybe, fromMaybe)
@@ -29,6 +33,15 @@ import Data.String.CodePoints (singleton)
 import Data.Tuple (Tuple)
 import Effect (Effect)
 import Random.LCG (Seed)
+
+-- EXPERIMENT:
+
+data ProductType = ProductType String Int
+
+derive instance genericProductType :: Generic ProductType _
+
+instance showProductType :: Show ProductType where
+  show = genericShow
 
 -- CARD TYPES ------------------------------------------------------------------
 
@@ -41,8 +54,8 @@ derive instance ordRank :: Ord Rank
 -- derive instance enumRank :: Enum Rank
 
 -- instance boundedRank :: Bounded Rank where
---   bottom = genericBottom
---   top = genericTop 
+--   bottom = genericBottom :: Rank
+--   top = genericTop :: Rank
 
 instance Show Rank where
   show RA  = "A"
@@ -54,7 +67,7 @@ instance Show Rank where
   show R7  = "7"
   show R8  = "8"
   show R9  = "9"
-  show R10 = fromMaybe "" (map singleton $ toEnum 0x2491) -- unicode ligature for one-char width 
+  show R10 = showCodePoint 0x2491 -- unicode ligature for one-char width 
   show RJ  = "J"
   show RQ  = "Q"
   show RK  = "K"
@@ -66,41 +79,42 @@ derive instance ordSuit :: Ord Suit
 -- derive instance boundedSuit :: Bounded Suit
 -- derive instance enumSuit :: Enum Suit
 
--- instance Show Suit where
-  -- show Club    = singleton (0x2663 :: Int)
-  -- show Diamond = [toEnum 0x2666] :: String 
-  -- show Heart   = [toEnum 0x2665] :: String
-  -- show Spade   = [toEnum 0x2660] :: String
+instance Show Suit where
+  show Club    = showCodePoint 0x2663
+  show Diamond = showCodePoint 0x2666
+  show Heart   = showCodePoint 0x2665
+  show Spade   = showCodePoint 0x2660
   
 
 data Card        = Card Rank Suit
 
 derive instance eqCard :: Eq Card
--- derive instance showCard :: Show Card
+derive instance genericCard :: Generic Card _
 derive instance ordCard :: Ord Card
 
--- instance Show Card where
---   show card = (show card.rank) <> (show card.suit)
+instance showCard :: Show Card where
+  -- show = genericShow                -- Generic show yields "(Card ⒑ ♦" 
+  show :: Card -> String
+  show (Card r s) = show r <> show s   -- Custom show yields "⒑♦; used to display cards in game"
 
 data FaceDir     = FaceUp | FaceDown
 
 derive instance eqFaceDir :: Eq FaceDir
--- derive instance showFaceDir :: Show FaceDir
 derive instance genericFaceDir :: Generic FaceDir _
 derive instance ordFaceDir :: Ord FaceDir
 
-instance showFaceDir :: Show FaceDir where -- FIX: need better output than string; do we use this?
+instance showFaceDir :: Show FaceDir where
   show = genericShow
 
 data DCard       = DCard { _card    :: Card
                          , _facedir :: FaceDir }
                         
-derive instance eqDCard :: Eq DCard                      
--- derive instance showDCard :: Show DCard                      
+derive instance eqDCard :: Eq DCard  
+derive instance genericDCard :: Generic DCard _                    
 derive instance ordDCard :: Ord DCard
 
--- instance Show DCard where
---   show dCard = (show dCard.card) <> (show dCard.facedir)
+instance showDCard :: Show DCard where
+  show = genericShow
 
 data DisplayMode = Stacked | Splayed
 
@@ -128,14 +142,10 @@ data Pile = Pile { _cards    :: List DCard  --   piles contain cards
                  }      
 
 derive instance eqPile :: Eq Pile           -- since it makes canPlace simpler
--- derive instance showPile :: Show Pile
+derive instance genericPile :: Generic Pile _
 
--- instance Show Pile where
---   show pile =  show pile.cards
---             <> show pile.display
---             <> show pile.rankBias
---             <> show pile.suitBias
---             <> show pile.pileType
+instance Show Pile where
+  show = genericShow
 
 -- GAME TYPES ------------------------------------------------------------------
 
@@ -145,12 +155,10 @@ data Field = Field { _waste :: List Pile      -- fields are game wrappers for th
                    }
 
 derive instance eqField :: Eq Field
--- derive instance showField :: Show Field
+derive instance genericField :: Generic Field _
 
--- instance Show Field where
---   show field =  show field.waste
---              <> show field.tableau
---              <> show field.found
+instance showField :: Show Field where
+  show = genericShow
 
                                              --   the gamestate is a record for the
 data GSt = GSt { _field   :: Field           --   field as seen above
@@ -160,14 +168,10 @@ data GSt = GSt { _field   :: Field           --   field as seen above
                , _moves   :: Int
                }
 
--- derive instance showGSt :: Show GSt    
+derive instance genericGSt :: Generic GSt _
 
--- instance Show GSt where
---   show gst =  show gst.field
---            <> show gst.seed
---            <> show gst.history
---            <> show gst.score
---            <> show gst.moves
+-- instance showGSt :: Show GSt where -- FIXME: can't show seed w/ genericShow
+--   show = genericShow
 
 -- DISPLAY TYPES ---------------------------------------------------------------
 
@@ -204,5 +208,8 @@ derive instance eqExt :: Eq Ext
 derive instance genericExt :: Generic Ext _        
 derive instance ordExt :: Ord Ext
 
--- instance showExt :: Show Ext where
---   show = genericShow
+instance showExt :: Show Ext where
+  show = genericShow
+
+showCodePoint :: Int -> String
+showCodePoint codePoint = fromMaybe "" (map singleton $ toEnum codePoint)
