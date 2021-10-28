@@ -18,11 +18,14 @@ module CardTypes
 
 import Prelude
 
+-- import Data.Generic.Rep (class Generic)
+import Data.Bounded.Generic (genericBottom, genericTop)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.Enum (class Enum, toEnum)
 import Data.List (List)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe, fromMaybe)
+import Data.String.CodePoints (singleton)
 import Data.Tuple (Tuple)
 import Effect (Effect)
 import Random.LCG (Seed)
@@ -37,8 +40,9 @@ derive instance ordRank :: Ord Rank
 -- derive instance genericRank :: Generic Rank _
 -- derive instance enumRank :: Enum Rank
 
-instance boundedRank :: Bounded Rank where
-  bounded = bottom 
+-- instance boundedRank :: Bounded Rank where
+--   bottom = genericBottom
+--   top = genericTop 
 
 instance Show Rank where
   show RA  = "A"
@@ -50,7 +54,7 @@ instance Show Rank where
   show R7  = "7"
   show R8  = "8"
   show R9  = "9"
-  show R10 = [toEnum 0x2491] :: String -- unicode ligature for one-char width 
+  show R10 = fromMaybe "" (map singleton $ toEnum 0x2491) -- unicode ligature for one-char width 
   show RJ  = "J"
   show RQ  = "Q"
   show RK  = "K"
@@ -62,11 +66,11 @@ derive instance ordSuit :: Ord Suit
 -- derive instance boundedSuit :: Bounded Suit
 -- derive instance enumSuit :: Enum Suit
 
-instance Show Suit where
-  show Club    = [toEnum 0x2663] :: String -- unicode characters for suits
-  show Diamond = [toEnum 0x2666] :: String 
-  show Heart   = [toEnum 0x2665] :: String
-  show Spade   = [toEnum 0x2660] :: String
+-- instance Show Suit where
+  -- show Club    = singleton (0x2663 :: Int)
+  -- show Diamond = [toEnum 0x2666] :: String 
+  -- show Heart   = [toEnum 0x2665] :: String
+  -- show Spade   = [toEnum 0x2660] :: String
   
 
 data Card        = Card Rank Suit
@@ -75,8 +79,8 @@ derive instance eqCard :: Eq Card
 -- derive instance showCard :: Show Card
 derive instance ordCard :: Ord Card
 
-instance Show Card where
-  show card = (show card.rank) <> (show card.suit)
+-- instance Show Card where
+--   show card = (show card.rank) <> (show card.suit)
 
 data FaceDir     = FaceUp | FaceDown
 
@@ -95,8 +99,8 @@ derive instance eqDCard :: Eq DCard
 -- derive instance showDCard :: Show DCard                      
 derive instance ordDCard :: Ord DCard
 
-instance Show DCard where
-  show dCard = (show dCard.card) <> (show dCard.facedir)
+-- instance Show DCard where
+--   show dCard = (show dCard.card) <> (show dCard.facedir)
 
 data DisplayMode = Stacked | Splayed
 
@@ -126,12 +130,12 @@ data Pile = Pile { _cards    :: List DCard  --   piles contain cards
 derive instance eqPile :: Eq Pile           -- since it makes canPlace simpler
 -- derive instance showPile :: Show Pile
 
-instance Show Pile where
-  show pile =  show pile.cards
-            <> show pile.display
-            <> show pile.rankBias
-            <> show pile.suitBias
-            <> show pile.pileType
+-- instance Show Pile where
+--   show pile =  show pile.cards
+--             <> show pile.display
+--             <> show pile.rankBias
+--             <> show pile.suitBias
+--             <> show pile.pileType
 
 -- GAME TYPES ------------------------------------------------------------------
 
@@ -143,10 +147,10 @@ data Field = Field { _waste :: List Pile      -- fields are game wrappers for th
 derive instance eqField :: Eq Field
 -- derive instance showField :: Show Field
 
-instance Show Field where
-  show field =  show field.waste
-             <> show field.tableau
-             <> show field.found
+-- instance Show Field where
+--   show field =  show field.waste
+--              <> show field.tableau
+--              <> show field.found
 
                                              --   the gamestate is a record for the
 data GSt = GSt { _field   :: Field           --   field as seen above
@@ -158,12 +162,12 @@ data GSt = GSt { _field   :: Field           --   field as seen above
 
 -- derive instance showGSt :: Show GSt    
 
-instance Show GSt where
-  show gst =  show gst.field
-           <> show gst.seed
-           <> show gst.history
-           <> show gst.score
-           <> show gst.moves
+-- instance Show GSt where
+--   show gst =  show gst.field
+--            <> show gst.seed
+--            <> show gst.history
+--            <> show gst.score
+--            <> show gst.moves
 
 -- DISPLAY TYPES ---------------------------------------------------------------
 
@@ -200,5 +204,5 @@ derive instance eqExt :: Eq Ext
 derive instance genericExt :: Generic Ext _        
 derive instance ordExt :: Ord Ext
 
-instance showExt :: Show Ext where
-  show = genericShow
+-- instance showExt :: Show Ext where
+--   show = genericShow
